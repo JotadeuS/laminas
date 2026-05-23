@@ -57,15 +57,14 @@
         }
 
         .app-container {
-            width: 100%; /* Garantiza 100% de responsividad en móviles extraños */
+            width: 100%; 
             max-width: 650px; 
             margin: 0 auto;
             background-color: rgba(11, 12, 16, 0.85); 
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
-            min-height: 100vh;
             position: relative;
-            padding-bottom: 50px;
+            padding-bottom: 20px;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
@@ -344,6 +343,60 @@
         }
         .modal-btn.cancel { background: #333; color: white; border: 1px solid #555; background-image: none; }
         .modal-btn:active { transform: scale(0.95); }
+
+        /* ==============================================================
+           RESPONSIVIDAD Y ADAPTACIÓN MÓVIL OPTIMIZADA
+           ============================================================== */
+        @media (max-width: 500px) {
+            .brand-row {
+                flex-direction: row; /* Mantiene logo y título lado a lado */
+                gap: 10px;
+                white-space: normal; /* Permite que el texto baje si falta espacio */
+                overflow: hidden; 
+            }
+            .logo-img {
+                max-height: 70px; /* Reducido para no comer espacio vital */
+                flex-shrink: 0;
+            }
+            .main-title {
+                font-size: 1.2rem;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                text-align: left;
+            }
+            .gold-text {
+                font-size: 1.4rem;
+            }
+            .stats-container {
+                flex-wrap: nowrap; /* Fuerza todo a UNA sola línea */
+                gap: 2px;
+            }
+            .stat-box {
+                flex: 1; 
+                padding: 5px 2px;
+            }
+            .stat-value {
+                font-size: 1.1rem; /* Reducido para caber horizontalmente */
+            }
+            .stat-label {
+                font-size: 0.55rem;
+            }
+            .section-content {
+                margin: 10px 5px;
+                padding: 10px;
+            }
+            .action-btns-container {
+                flex-direction: column;
+                gap: 12px;
+                padding: 0 10px;
+            }
+            .btn-action {
+                width: 100%;
+            }
+            .grid-rep {
+                grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+            }
+        }
     </style>
 </head>
 <body>
