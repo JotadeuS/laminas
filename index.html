@@ -9,6 +9,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         :root {
@@ -69,6 +70,7 @@
             display: flex;
             flex-direction: column;
             border: 1px solid rgba(255, 215, 0, 0.2);
+            min-height: 100vh;
         }
 
         /* HEADER */
@@ -83,6 +85,63 @@
         
         .header-top {
             padding: 10px 15px; 
+            position: relative; 
+        }
+
+        /* Menú 3 Puntos */
+        .menu-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 101;
+        }
+        
+        .menu-btn {
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: color 0.3s;
+        }
+        
+        .menu-btn:hover { color: var(--gold); }
+        
+        .menu-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 35px;
+            background: rgba(17, 20, 26, 0.95);
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+        
+        .menu-dropdown.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .menu-item {
+            padding: 12px 20px;
+            color: var(--white);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .menu-item:hover {
+            background: rgba(255,215,0,0.1);
+            color: var(--gold);
         }
 
         /* Logo y Título CENTRADOS */
@@ -344,18 +403,53 @@
         .modal-btn.cancel { background: #333; color: white; border: 1px solid #555; background-image: none; }
         .modal-btn:active { transform: scale(0.95); }
 
+        /* Contenedor QR Interno */
+        #qr-code-container {
+            display: inline-block;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid var(--gold);
+        }
+
+        /* Estilos Lista Faltantes (Modo Solo Lectura) */
+        .missing-group {
+            margin-bottom: 20px;
+            background: #12181f;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--gold);
+            text-align: left;
+        }
+        .missing-title {
+            color: var(--gold);
+            font-weight: 800;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .missing-numbers {
+            color: var(--white);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
         /* ==============================================================
            RESPONSIVIDAD Y ADAPTACIÓN MÓVIL OPTIMIZADA
            ============================================================== */
         @media (max-width: 500px) {
             .brand-row {
-                flex-direction: row; /* Mantiene logo y título lado a lado */
+                flex-direction: row; 
                 gap: 10px;
-                white-space: normal; /* Permite que el texto baje si falta espacio */
+                white-space: normal; 
                 overflow: hidden; 
             }
             .logo-img {
-                max-height: 70px; /* Reducido para no comer espacio vital */
+                max-height: 70px; 
                 flex-shrink: 0;
             }
             .main-title {
@@ -364,54 +458,44 @@
                 justify-content: flex-start;
                 text-align: left;
             }
-            .gold-text {
-                font-size: 1.4rem;
-            }
+            .gold-text { font-size: 1.4rem; }
             .stats-container {
-                flex-wrap: nowrap; /* Fuerza todo a UNA sola línea */
+                flex-wrap: nowrap; 
                 gap: 2px;
             }
-            .stat-box {
-                flex: 1; 
-                padding: 5px 2px;
-            }
-            .stat-value {
-                font-size: 1.1rem; /* Reducido para caber horizontalmente */
-            }
-            .stat-label {
-                font-size: 0.55rem;
-            }
-            .section-content {
-                margin: 10px 5px;
-                padding: 10px;
-            }
-            .action-btns-container {
-                flex-direction: column;
-                gap: 12px;
-                padding: 0 10px;
-            }
-            .btn-action {
-                width: 100%;
-            }
-            .grid-rep {
-                grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-            }
+            .stat-box { flex: 1; padding: 5px 2px; }
+            .stat-value { font-size: 1.1rem; }
+            .stat-label { font-size: 0.55rem; }
+            .section-content { margin: 10px 5px; padding: 10px; }
+            .action-btns-container { flex-direction: column; gap: 12px; padding: 0 10px; }
+            .btn-action { width: 100%; }
+            .grid-rep { grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); }
+            .menu-container { top: 10px; right: 10px; }
         }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <div class="header">
+        <div class="header" id="main-header">
             <div class="header-top">
+                <div class="menu-container" id="sys-menu" style="display:none;">
+                    <button class="menu-btn" onclick="toggleMenu()"><i class="fas fa-ellipsis-v"></i></button>
+                    <div class="menu-dropdown" id="main-menu">
+                        <div class="menu-item" onclick="abrirModalQR()">
+                            <i class="fas fa-qrcode"></i> Generar QR Faltantes
+                        </div>
+                    </div>
+                </div>
+
                 <div class="brand-row">
                     <img src="logo.jpg" alt="Logo Mundial 2026 Pro" class="logo-img">
-                    <div class="main-title">
+                    <div class="main-title" id="top-title">
                         Láminas Mundial <span class="gold-text">2026</span>
                     </div>
                 </div>
                 
-                <div class="stats-container">
+                <div class="stats-container" id="sys-stats">
                     <div class="stat-box">
                         <div class="stat-value" id="porcentaje">0.0%</div>
                         <div class="stat-label">Completado</div>
@@ -431,18 +515,19 @@
                 </div>
             </div>
             
-            <div class="tabs">
+            <div class="tabs" id="sys-tabs">
                 <div class="tab active" onclick="switchTab('coleccion', this)">Mi Álbum</div>
                 <div class="tab" onclick="switchTab('repetidas', this)">Repetidas</div>
             </div>
 
-            <div class="search-box">
+            <div class="search-box" id="sys-search">
                 <input type="text" id="search-input" placeholder="🔍 Buscar país, grupo o especial..." onkeyup="ejecutarBuscador()">
             </div>
         </div>
 
         <div id="coleccion" class="section-content active"></div>
         <div id="repetidas" class="section-content"></div>
+        <div id="vista-faltantes" class="section-content"></div>
     </div>
 
     <div class="modal-overlay" id="custom-modal">
@@ -450,12 +535,30 @@
             <div class="modal-icon" id="modal-icon"><i class="fas fa-check-circle"></i></div>
             <div class="modal-title" id="modal-title">Título</div>
             <div class="modal-message" id="modal-message">Mensaje</div>
-            <div class="modal-buttons" id="modal-buttons">
-                </div>
+            <div class="modal-buttons" id="modal-buttons"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal-box">
+            <div class="modal-title" style="margin-bottom: 5px;"><i class="fas fa-qrcode" style="color:var(--gold);"></i> Compartir Faltantes</div>
+            <div class="modal-message">Escanea este QR para ver la lista exacta de mis láminas faltantes por país.</div>
+            
+            <div id="qr-code-container"></div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="cerrarModalQR()">Cerrar</button>
+                <button class="modal-btn" onclick="compartirNativo()"><i class="fas fa-share-nodes"></i> Compartir</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // === CONFIGURACIÓN DE PRODUCCIÓN ===
+        // Si haces pruebas locales (file://), el sistema usará esta URL simulada 
+        // para que tu celular pueda escanear el código QR. ¡Reemplázala por la tuya real!
+        const URL_PRODUCCION = "https://laminasmundial.vercel.app/"; 
+
         // === 1. CONFIGURACIÓN FIREBASE ===
         const firebaseConfig = {
             apiKey: "AIzaSyBnRBx_atdwcQ_9yYib6FfWc6GfothCOTw",
@@ -468,7 +571,6 @@
             measurementId: "G-K0YKV1H2EE"
         };
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -480,7 +582,7 @@
 
         // === 2. VARIABLES DE DATOS ===
         const TOTAL_ALBUM = 980;
-        const especiales = ["00", ...Array.from({length: 19}, (_, i) => `FWC ${i+1}`)];
+        const especiales = ["00", ...Array.from({length: 17}, (_, i) => `FWC ${i+1}`)];
         const cocaCola = Array.from({length: 14}, (_, i) => `CC ${i+1}`);
         
         const grupos = {
@@ -502,8 +604,79 @@
         let repetidas = {};
         let lockedColeccion = {};
         let lockedRepetidas = {};
+        let qrInstancia = null;
 
-        // === 3. LÓGICA DEL POP-UP ===
+        // Cierra el menú si se hace clic fuera
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('main-menu');
+            const btn = document.querySelector('.menu-btn');
+            if (menu.classList.contains('active') && !menu.contains(event.target) && !btn.contains(event.target)) {
+                menu.classList.remove('active');
+            }
+        });
+
+        // === 3. LÓGICA DE MENÚ Y QR MEJORADA ===
+        function toggleMenu() {
+            document.getElementById('main-menu').classList.toggle('active');
+        }
+
+        function obtenerEnlaceCompartir() {
+            let urlBase = window.location.href.split('?')[0]; // Toma la URL actual sin parámetros
+            
+            // Si el archivo se está abriendo de forma local en la PC (file:///)
+            // Forzamos un enlace HTTPS para que la cámara del celular no arroje error.
+            if (window.location.protocol === 'file:') {
+                urlBase = URL_PRODUCCION;
+            }
+            
+            // Nos aseguramos que no quede una barra suelta al final antes de sumar el parámetro
+            urlBase = urlBase.replace(/\/$/, "");
+            
+            return `${urlBase}?missing=${usuarioId}`;
+        }
+
+        function abrirModalQR() {
+            document.getElementById('main-menu').classList.remove('active');
+            document.getElementById('qr-modal').classList.add('active');
+            
+            const urlCompartir = obtenerEnlaceCompartir();
+            const qrContainer = document.getElementById('qr-code-container');
+            qrContainer.innerHTML = ''; 
+            
+            qrInstancia = new QRCode(qrContainer, {
+                text: urlCompartir,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+        }
+
+        function cerrarModalQR() {
+            document.getElementById('qr-modal').classList.remove('active');
+        }
+
+        function compartirNativo() {
+            const urlCompartir = obtenerEnlaceCompartir();
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Mis Láminas Faltantes',
+                    text: '¡Revisa la lista exacta de las láminas del Mundial 2026 que me faltan por país!',
+                    url: urlCompartir
+                }).then(() => {
+                    cerrarModalQR();
+                }).catch((error) => console.log('Error compartiendo', error));
+            } else {
+                navigator.clipboard.writeText(urlCompartir).then(() => {
+                    cerrarModalQR();
+                    showModal('success', '¡Enlace Copiado!', 'El enlace se ha copiado al portapapeles. Pégalo en WhatsApp o Facebook.');
+                });
+            }
+        }
+
+        // === 4. LÓGICA DEL POP-UP GENERAL ===
         function showModal(type, title, message, confirmCallback = null) {
             const modal = document.getElementById('custom-modal');
             const icon = document.getElementById('modal-icon');
@@ -540,7 +713,7 @@
             document.getElementById('custom-modal').classList.remove('active');
         }
 
-        // === 4. LÓGICA DE FIREBASE Y SINCRONIZACIÓN ===
+        // === 5. FIREBASE Y UI BASE ===
         function cargarDatosDesdeNube() {
             db.ref('trackers/' + usuarioId).once('value').then((snapshot) => {
                 const data = snapshot.val();
@@ -550,25 +723,19 @@
                     lockedColeccion = data.lockedColeccion || {};
                     lockedRepetidas = data.lockedRepetidas || {};
                 }
-                // Actualiza visualmente todo una vez que llega de la red
                 buildUI();
                 updateStats();
-            }).catch(error => {
-                console.error("Error conectando a Firebase: ", error);
+                document.getElementById('sys-menu').style.display = 'block'; 
             });
         }
 
         function saveState() {
-            db.ref('trackers/' + usuarioId).update({
-                coleccion: coleccion,
-                repetidas: repetidas
-            });
+            db.ref('trackers/' + usuarioId).update({ coleccion: coleccion, repetidas: repetidas });
             updateStats();
         }
 
         function guardarCategoria(categoria) {
             let hasChanges = false;
-
             if (categoria === 'coleccion') {
                 for (let key in coleccion) {
                     if (coleccion[key] && !lockedColeccion[key]) {
@@ -578,11 +745,9 @@
                 }
                 if (hasChanges) {
                     db.ref('trackers/' + usuarioId).update({ lockedColeccion: lockedColeccion });
-                    showModal('success', '¡Álbum Guardado!', 'Las láminas seleccionadas han sido bloqueadas permanentemente en la nube.');
+                    showModal('success', '¡Álbum Guardado!', 'Las láminas seleccionadas han sido bloqueadas permanentemente.');
                     buildUI();
-                } else {
-                    showModal('warning', 'Sin Novedades', 'No hay selección nueva para guardar en tu álbum.');
-                }
+                } else showModal('warning', 'Sin Novedades', 'No hay selección nueva para guardar.');
             } else {
                 for (let key in repetidas) {
                     let minLocked = lockedRepetidas[key] || 0;
@@ -593,67 +758,37 @@
                 }
                 if (hasChanges) {
                     db.ref('trackers/' + usuarioId).update({ lockedRepetidas: lockedRepetidas });
-                    showModal('success', '¡Repetidas Guardadas!', 'Tus nuevas repetidas han sido guardadas de forma permanente en la nube.');
-                    
-                    for (let key in repetidas) {
-                        const subBtn = document.getElementById(`btn-sub-${key}`);
-                        if (subBtn && repetidas[key] <= (lockedRepetidas[key] || 0)) {
-                            subBtn.classList.add('locked');
-                        }
-                    }
-                } else {
-                    showModal('warning', 'Sin Novedades', 'No hay selección nueva para guardar en repetidas.');
-                }
+                    showModal('success', '¡Repetidas Guardadas!', 'Tus nuevas repetidas han sido guardadas.');
+                    buildUI();
+                } else showModal('warning', 'Sin Novedades', 'No hay selección nueva para guardar en repetidas.');
             }
         }
 
         function confirmarLimpiar(categoria) {
             let hasData = false;
+            if (categoria === 'coleccion') hasData = Object.keys(coleccion).length > 0;
+            else for (let key in repetidas) { if (repetidas[key] > 0) { hasData = true; break; } }
 
-            if (categoria === 'coleccion') {
-                hasData = Object.keys(coleccion).length > 0;
-            } else {
-                for (let key in repetidas) {
-                    if (repetidas[key] > 0) {
-                        hasData = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!hasData) {
-                showModal('warning', 'Sin Registros', 'No hay ningún registro que limpiar. Las estadísticas ya están en cero.');
-                return;
-            }
+            if (!hasData) return showModal('warning', 'Sin Registros', 'No hay ningún registro que limpiar.');
 
             showModal('warning', '¿Resetear todo a cero?', 'Se borrarán TODOS los registros en la nube para esta categoría. ¿Continuar?', () => {
                 if (categoria === 'coleccion') {
-                    coleccion = {}; 
-                    lockedColeccion = {};
+                    coleccion = {}; lockedColeccion = {};
                     db.ref('trackers/' + usuarioId + '/coleccion').remove();
                     db.ref('trackers/' + usuarioId + '/lockedColeccion').remove();
                 } else {
-                    repetidas = {};
-                    lockedRepetidas = {};
+                    repetidas = {}; lockedRepetidas = {};
                     db.ref('trackers/' + usuarioId + '/repetidas').remove();
                     db.ref('trackers/' + usuarioId + '/lockedRepetidas').remove();
                 }
-                saveState(); 
-                buildUI();   
-                setTimeout(() => showModal('success', 'Reset Completo', 'Todas las selecciones se han reseteado correctamente en la nube.'), 300);
+                saveState(); buildUI();   
+                setTimeout(() => showModal('success', 'Reset Completo', 'Todas las selecciones se han reseteado.'), 300);
             });
         }
 
-        // === 5. INTERACCIÓN Y UI ===
         function toggleLamina(id) {
             if (lockedColeccion[id]) return;
-
-            if (coleccion[id]) {
-                delete coleccion[id];
-            } else {
-                coleccion[id] = true;
-            }
-            
+            coleccion[id] ? delete coleccion[id] : coleccion[id] = true;
             document.getElementById(`lam-${id}`).classList.toggle('pegada');
             saveState();
         }
@@ -661,36 +796,24 @@
         function updateRepeat(id, change) {
             const minAllowed = lockedRepetidas[id] || 0;
             if (!repetidas[id]) repetidas[id] = 0;
-            
             if (change < 0 && repetidas[id] <= minAllowed) return;
-
             repetidas[id] += change;
-            
             document.getElementById(`rep-count-${id}`).innerText = repetidas[id];
             saveState();
-
+            
             const subBtn = document.getElementById(`btn-sub-${id}`);
-            if (subBtn) {
-                if (repetidas[id] <= minAllowed) {
-                    subBtn.classList.add('locked');
-                } else {
-                    subBtn.classList.remove('locked');
-                }
-            }
+            if (subBtn) subBtn.classList.toggle('locked', repetidas[id] <= minAllowed);
         }
 
         function updateStats() {
             const pegadasCount = Object.keys(coleccion).length;
             let faltantesCount = TOTAL_ALBUM - pegadasCount;
             if(faltantesCount < 0) faltantesCount = 0; 
-            
             let percent = (pegadasCount / TOTAL_ALBUM) * 100;
             if(percent > 100) percent = 100;
 
             let totalRepetidas = 0;
-            for (const key in repetidas) {
-                totalRepetidas += repetidas[key];
-            }
+            for (const key in repetidas) totalRepetidas += repetidas[key];
 
             document.getElementById('pegadas').innerText = pegadasCount;
             document.getElementById('faltantes').innerText = faltantesCount;
@@ -701,67 +824,38 @@
         function switchTab(tabId, element) {
             document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            
             document.getElementById(tabId).classList.add('active');
             element.classList.add('active');
-            
             ejecutarBuscador();
         }
 
         function ejecutarBuscador() {
-            const removeAccents = (str) => {
-                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            };
-
-            const inputRaw = document.getElementById('search-input').value.toLowerCase();
-            const input = removeAccents(inputRaw);
-            
+            const removeAccents = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const input = removeAccents(document.getElementById('search-input').value.toLowerCase());
             const activeSection = document.querySelector('.section-content.active');
+            if(!activeSection) return;
             const accordions = activeSection.querySelectorAll('.accordion');
 
             accordions.forEach(acc => {
-                const textContent = removeAccents(acc.innerText.toLowerCase());
-                if (textContent.includes(input)) {
+                if (removeAccents(acc.innerText.toLowerCase()).includes(input)) {
                     acc.style.display = 'block'; 
-                    if (input.trim() !== '') {
-                        acc.classList.add('open'); 
-                    } else {
-                        acc.classList.remove('open'); 
-                    }
+                    input.trim() !== '' ? acc.classList.add('open') : acc.classList.remove('open'); 
                 } else {
                     acc.style.display = 'none'; 
                 }
             });
         }
 
-        function toggleAccordion(el) {
-            el.parentElement.classList.toggle('open');
-        }
+        function toggleAccordion(el) { el.parentElement.classList.toggle('open'); }
 
         function buildUI() {
             const colContainer = document.getElementById('coleccion');
             const repContainer = document.getElementById('repetidas');
-            
-            colContainer.innerHTML = '';
-            repContainer.innerHTML = '';
+            colContainer.innerHTML = ''; repContainer.innerHTML = '';
             
             const createSection = (title, contentCol, contentRep) => {
-                const accCol = `
-                    <div class="accordion">
-                        <div class="accordion-header" onclick="toggleAccordion(this)">
-                            ${title} <span class="icon">▼</span>
-                        </div>
-                        <div class="accordion-body"><div class="grid">${contentCol}</div></div>
-                    </div>`;
-                const accRep = `
-                    <div class="accordion">
-                        <div class="accordion-header" onclick="toggleAccordion(this)">
-                            ${title} <span class="icon">▼</span>
-                        </div>
-                        <div class="accordion-body"><div class="grid-rep">${contentRep}</div></div>
-                    </div>`;
-                colContainer.innerHTML += accCol;
-                repContainer.innerHTML += accRep;
+                colContainer.innerHTML += `<div class="accordion"><div class="accordion-header" onclick="toggleAccordion(this)">${title} <span class="icon">▼</span></div><div class="accordion-body"><div class="grid">${contentCol}</div></div></div>`;
+                repContainer.innerHTML += `<div class="accordion"><div class="accordion-header" onclick="toggleAccordion(this)">${title} <span class="icon">▼</span></div><div class="accordion-body"><div class="grid-rep">${contentRep}</div></div></div>`;
             };
 
             let espCol = '', espRep = '';
@@ -769,55 +863,29 @@
                 const id = esp.replace(/\s+/g, '-');
                 const isPegada = coleccion[id] ? 'pegada' : '';
                 const isLockedCol = lockedColeccion[id] ? 'locked' : '';
-                
                 const repVal = repetidas[id] || 0;
-                const minLocked = lockedRepetidas[id] || 0;
-                const isSubLocked = repVal <= minLocked ? 'locked' : '';
+                const isSubLocked = repVal <= (lockedRepetidas[id] || 0) ? 'locked' : '';
                 
                 espCol += `<div id="lam-${id}" class="lamina ${isPegada} ${isLockedCol}" onclick="toggleLamina('${id}')">${esp}</div>`;
-                
-                espRep += `
-                    <div class="rep-item">
-                        <div class="rep-name">${esp}</div>
-                        <div class="controls">
-                            <button id="btn-sub-${id}" class="btn-ctrl sub ${isSubLocked}" onclick="updateRepeat('${id}', -1)">-</button>
-                            <span class="rep-count" id="rep-count-${id}">${repVal}</span>
-                            <button class="btn-ctrl add" onclick="updateRepeat('${id}', 1)">+</button>
-                        </div>
-                    </div>`;
+                espRep += `<div class="rep-item"><div class="rep-name">${esp}</div><div class="controls"><button id="btn-sub-${id}" class="btn-ctrl sub ${isSubLocked}" onclick="updateRepeat('${id}', -1)">-</button><span class="rep-count" id="rep-count-${id}">${repVal}</span><button class="btn-ctrl add" onclick="updateRepeat('${id}', 1)">+</button></div></div>`;
             });
             createSection('🌟 Especiales', espCol, espRep);
 
             for (const [grupo, paises] of Object.entries(grupos)) {
                 let grpCol = '', grpRep = '';
-                
                 paises.forEach(pais => {
-                    grpCol += `<div class="country-title">${pais}</div>`;
-                    grpRep += `<div class="country-title">${pais}</div>`;
-                    
+                    grpCol += `<div class="country-title">${pais}</div>`; grpRep += `<div class="country-title">${pais}</div>`;
                     for (let i = 1; i <= 20; i++) {
                         const id = `${pais.split(' ')[0]}-${i}`;
                         const isPegada = coleccion[id] ? 'pegada' : '';
                         const isLockedCol = lockedColeccion[id] ? 'locked' : '';
                         const isHolo = i === 1 ? 'holo' : '';
-                        
                         const repVal = repetidas[id] || 0;
-                        const minLocked = lockedRepetidas[id] || 0;
-                        const isSubLocked = repVal <= minLocked ? 'locked' : '';
-                        
+                        const isSubLocked = repVal <= (lockedRepetidas[id] || 0) ? 'locked' : '';
                         const label = i === 1 ? '★ 1' : i;
 
                         grpCol += `<div id="lam-${id}" class="lamina ${isHolo} ${isPegada} ${isLockedCol}" onclick="toggleLamina('${id}')">${label}</div>`;
-                        
-                        grpRep += `
-                            <div class="rep-item">
-                                <div class="rep-name ${isHolo ? 'holo-text' : ''}">${label}</div>
-                                <div class="controls">
-                                    <button id="btn-sub-${id}" class="btn-ctrl sub ${isSubLocked}" onclick="updateRepeat('${id}', -1)">-</button>
-                                    <span class="rep-count" id="rep-count-${id}">${repVal}</span>
-                                    <button class="btn-ctrl add" onclick="updateRepeat('${id}', 1)">+</button>
-                                </div>
-                            </div>`;
+                        grpRep += `<div class="rep-item"><div class="rep-name ${isHolo ? 'holo-text' : ''}">${label}</div><div class="controls"><button id="btn-sub-${id}" class="btn-ctrl sub ${isSubLocked}" onclick="updateRepeat('${id}', -1)">-</button><span class="rep-count" id="rep-count-${id}">${repVal}</span><button class="btn-ctrl add" onclick="updateRepeat('${id}', 1)">+</button></div></div>`;
                     }
                 });
                 createSection(`⚽ ${grupo}`, grpCol, grpRep);
@@ -828,46 +896,94 @@
                 const id = cc.replace(/\s+/g, '-');
                 const isPegada = coleccion[id] ? 'pegada' : '';
                 const isLockedCol = lockedColeccion[id] ? 'locked' : '';
-                
                 const repVal = repetidas[id] || 0;
-                const minLocked = lockedRepetidas[id] || 0;
-                const isSubLocked = repVal <= minLocked ? 'locked' : '';
+                const isSubLocked = repVal <= (lockedRepetidas[id] || 0) ? 'locked' : '';
                 
                 ccCol += `<div id="lam-${id}" class="lamina ${isPegada} ${isLockedCol}" onclick="toggleLamina('${id}')">${cc}</div>`;
-                
-                ccRep += `
-                    <div class="rep-item">
-                        <div class="rep-name">${cc}</div>
-                        <div class="controls">
-                            <button id="btn-sub-${id}" class="btn-ctrl sub ${isSubLocked}" onclick="updateRepeat('${id}', -1)">-</button>
-                            <span class="rep-count" id="rep-count-${id}">${repVal}</span>
-                            <button class="btn-ctrl add" onclick="updateRepeat('${id}', 1)">+</button>
-                        </div>
-                    </div>`;
+                ccRep += `<div class="rep-item"><div class="rep-name">${cc}</div><div class="controls"><button id="btn-sub-${id}" class="btn-ctrl sub ${isSubLocked}" onclick="updateRepeat('${id}', -1)">-</button><span class="rep-count" id="rep-count-${id}">${repVal}</span><button class="btn-ctrl add" onclick="updateRepeat('${id}', 1)">+</button></div></div>`;
             });
             createSection('🥤 Láminas Coca Cola', ccCol, ccRep);
 
-            colContainer.innerHTML += `
-                <div class="action-btns-container">
-                    <button class="btn-action btn-clear" onclick="confirmarLimpiar('coleccion')">🗑️ Resetear Álbum</button>
-                    <button class="btn-action btn-save" onclick="guardarCategoria('coleccion')">💾 Guardar Selección</button>
-                </div>`;
-                
-            repContainer.innerHTML += `
-                <div class="action-btns-container">
-                    <button class="btn-action btn-clear" onclick="confirmarLimpiar('repetidas')">🗑️ Resetear Repetidas</button>
-                    <button class="btn-action btn-save" onclick="guardarCategoria('repetidas')">💾 Guardar Repetidas</button>
-                </div>`;
-
-            ejecutarBuscador();
+            colContainer.innerHTML += `<div class="action-btns-container"><button class="btn-action btn-clear" onclick="confirmarLimpiar('coleccion')">🗑️ Resetear Álbum</button><button class="btn-action btn-save" onclick="guardarCategoria('coleccion')">💾 Guardar Selección</button></div>`;
+            repContainer.innerHTML += `<div class="action-btns-container"><button class="btn-action btn-clear" onclick="confirmarLimpiar('repetidas')">🗑️ Resetear Repetidas</button><button class="btn-action btn-save" onclick="guardarCategoria('repetidas')">💾 Guardar Repetidas</button></div>`;
         }
 
-        // === 6. ARRANQUE DEL SISTEMA ===
-        // 1. Dibujamos la estructura base para que no haya parpadeo blanco (0ms)
-        buildUI();
-        updateStats();
-        // 2. Pedimos los datos a la nube para actualizar la interfaz en cuanto lleguen
-        cargarDatosDesdeNube();
+        // === 6. MODO VISTA DE FALTANTES (READ ONLY) ===
+        function activarModoLecturaFaltantes(targetId) {
+            document.getElementById('sys-menu').style.display = 'none';
+            document.getElementById('sys-stats').style.display = 'none';
+            document.getElementById('sys-tabs').style.display = 'none';
+            document.getElementById('sys-search').style.display = 'none';
+            document.getElementById('coleccion').style.display = 'none';
+            document.getElementById('repetidas').style.display = 'none';
+            
+            document.getElementById('top-title').innerHTML = 'Faltantes <span class="gold-text">Colega</span>';
+            
+            const vistaContainer = document.getElementById('vista-faltantes');
+            vistaContainer.classList.add('active');
+            vistaContainer.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--gold);"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br><b>Cargando lista de faltantes...</b></div>';
+
+            db.ref('trackers/' + targetId).once('value').then(snap => {
+                const data = snap.val() || {};
+                const friendCol = data.coleccion || {};
+                renderListaFaltantesLimpios(friendCol);
+            }).catch(e => {
+                vistaContainer.innerHTML = '<div style="text-align:center; color:var(--danger); padding:20px;">Error al cargar los datos.</div>';
+            });
+        }
+
+        function renderListaFaltantesLimpios(friendCol) {
+            let html = '<div style="padding: 10px;">';
+            html += '<div style="text-align:center; font-size:0.85rem; color:#777; margin-bottom:20px;">Modo de solo lectura. Revisa qué láminas faltan para intercambiar.</div>';
+            let foundAny = false;
+
+            let espMissing = especiales.filter(esp => !friendCol[esp.replace(/\s+/g, '-')]);
+            if(espMissing.length > 0) {
+                html += `<div class="missing-group"><div class="missing-title" style="color:var(--accent);">🌟 Especiales</div><div class="missing-numbers">${espMissing.join(', ')}</div></div>`;
+                foundAny = true;
+            }
+
+            for (const [grupo, paises] of Object.entries(grupos)) {
+                paises.forEach(pais => {
+                    let missingNums = [];
+                    for (let i = 1; i <= 20; i++) {
+                        const id = `${pais.split(' ')[0]}-${i}`;
+                        if(!friendCol[id]) missingNums.push(i === 1 ? '★ 1' : i);
+                    }
+                    if(missingNums.length > 0) {
+                        html += `<div class="missing-group"><div class="missing-title">${pais}</div><div class="missing-numbers">${missingNums.join(', ')}</div></div>`;
+                        foundAny = true;
+                    }
+                });
+            }
+
+            let ccMissing = cocaCola.filter(cc => !friendCol[cc.replace(/\s+/g, '-')]);
+            if(ccMissing.length > 0) {
+                html += `<div class="missing-group"><div class="missing-title" style="color:#ff004c;">🥤 Láminas Coca Cola</div><div class="missing-numbers">${ccMissing.join(', ')}</div></div>`;
+                foundAny = true;
+            }
+            
+            if(!foundAny) {
+                html += `<div style="text-align:center; padding: 30px; background: rgba(0,230,118,0.1); border: 1px solid var(--success); border-radius: 8px;"><i class="fas fa-trophy fa-3x" style="color:var(--success); margin-bottom:15px;"></i><br><span style="color:var(--success); font-weight:800; font-size:1.2rem;">¡Este álbum ya está completo!</span></div>`;
+            }
+            
+            html += `<div style="text-align:center; margin-top:40px; margin-bottom: 20px;"><button class="btn-action btn-save" onclick="window.location.href=window.location.pathname" style="width:100%;"><i class="fas fa-book"></i> Ir a Mi Propio Álbum</button></div></div>`;
+
+            document.getElementById('vista-faltantes').innerHTML = html;
+        }
+
+        // === 7. ARRANQUE DEL SISTEMA ===
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            if(params.has('missing')) {
+                const targetId = params.get('missing');
+                activarModoLecturaFaltantes(targetId);
+            } else {
+                buildUI();
+                updateStats();
+                cargarDatosDesdeNube();
+            }
+        };
 
     </script>
 </body>
