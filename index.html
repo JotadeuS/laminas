@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Álbum Mundial 2026 - Tracker Profesional</title>
+    <title>Láminas Álbum Mundial 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
@@ -142,6 +143,11 @@
         .menu-item:hover {
             background: rgba(255,215,0,0.1);
             color: var(--gold);
+        }
+        
+        .menu-item.danger:hover {
+            background: rgba(255,0,76,0.1);
+            color: var(--danger);
         }
 
         /* Logo y Título CENTRADOS */
@@ -373,6 +379,12 @@
         }
         .modal-overlay.active { opacity: 1; pointer-events: all; }
         
+        /* OVERLAY DE LOGIN (Sólido para evitar ver atrás) */
+        #login-overlay.active {
+            background: rgba(5, 5, 5, 0.98);
+            backdrop-filter: blur(10px);
+        }
+
         .modal-box {
             background: rgba(17, 20, 26, 0.95);
             border: 2px solid var(--gold);
@@ -402,6 +414,51 @@
         }
         .modal-btn.cancel { background: #333; color: white; border: 1px solid #555; background-image: none; }
         .modal-btn:active { transform: scale(0.95); }
+
+        /* ==============================================================
+           BOTÓN OFICIAL DE GOOGLE (HIPERREALISTA)
+           ============================================================== */
+        .google-btn {
+            width: 100%;
+            height: 42px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #dadce0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            margin-top: 10px;
+        }
+        .google-btn:hover {
+            box-shadow: 0 1px 3px rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            background-color: #f8f9fa;
+        }
+        .google-btn:active {
+            background-color: #eeeeee;
+        }
+        .google-icon-wrapper {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .google-icon-wrapper svg {
+            width: 100%;
+            height: 100%;
+        }
+        .google-btn .btn-text {
+            flex-grow: 1;
+            margin: 0;
+            color: #3c4043;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            padding-right: 24px; 
+        }
 
         /* Contenedor QR Interno */
         #qr-code-container {
@@ -485,6 +542,9 @@
                         <div class="menu-item" onclick="abrirModalQR()">
                             <i class="fas fa-qrcode"></i> Generar QR Faltantes
                         </div>
+                        <div class="menu-item danger" onclick="cerrarSesionGoogle()">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </div>
                     </div>
                 </div>
 
@@ -530,6 +590,29 @@
         <div id="vista-faltantes" class="section-content"></div>
     </div>
 
+    <div class="modal-overlay" id="login-overlay">
+        <div class="modal-box" style="padding-top: 35px; padding-bottom: 25px;">
+            <img src="logo.jpg" alt="Logo" style="max-height: 110px; margin-bottom: 15px; border-radius: 10px;">
+            <div class="modal-title">Bienvenido al Registro de Láminas</div>
+            <div class="modal-message">Inicia sesión para respaldar tu álbum y sincronizarlo en todos tus dispositivos automáticamente.</div>
+            
+            <button class="google-btn" onclick="iniciarSesionGoogle()">
+                <div class="google-icon-wrapper">
+                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                        <path fill="none" d="M0 0h48v48H0z"></path>
+                    </svg>
+                </div>
+                <p class="btn-text">Continuar con Google</p>
+            </button>
+            
+            <button class="modal-btn cancel" onclick="entrarComoInvitado()" style="width: 100%; margin-top: 15px;">Salir</button>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="custom-modal">
         <div class="modal-box">
             <div class="modal-icon" id="modal-icon"><i class="fas fa-check-circle"></i></div>
@@ -555,9 +638,7 @@
 
     <script>
         // === CONFIGURACIÓN DE PRODUCCIÓN ===
-        // Si haces pruebas locales (file://), el sistema usará esta URL simulada 
-        // para que tu celular pueda escanear el código QR. ¡Reemplázala por la tuya real!
-        const URL_PRODUCCION = "https://laminasmundial.vercel.app/"; 
+        const URL_PRODUCCION = "https://laminasmundial.vercel.app"; 
 
         // === 1. CONFIGURACIÓN FIREBASE ===
         const firebaseConfig = {
@@ -573,12 +654,9 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth();
 
-        let usuarioId = localStorage.getItem('wc26_user_id');
-        if (!usuarioId) {
-            usuarioId = 'user_' + Math.random().toString(36).substring(2, 11);
-            localStorage.setItem('wc26_user_id', usuarioId);
-        }
+        let usuarioId = null; 
 
         // === 2. VARIABLES DE DATOS ===
         const TOTAL_ALBUM = 980;
@@ -610,28 +688,75 @@
         document.addEventListener('click', function(event) {
             const menu = document.getElementById('main-menu');
             const btn = document.querySelector('.menu-btn');
-            if (menu.classList.contains('active') && !menu.contains(event.target) && !btn.contains(event.target)) {
+            if (menu && btn && menu.classList.contains('active') && !menu.contains(event.target) && !btn.contains(event.target)) {
                 menu.classList.remove('active');
             }
         });
 
-        // === 3. LÓGICA DE MENÚ Y QR MEJORADA ===
+        // === 3. LÓGICA DE AUTENTICACIÓN GOOGLE Y MODO INVITADO ===
+        function iniciarSesionGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch((error) => {
+                console.error("Error iniciando sesión", error);
+                showModal('warning', 'Error', 'No se pudo iniciar sesión. Inténtalo de nuevo.');
+            });
+        }
+
+        function cerrarSesionGoogle() {
+            document.getElementById('main-menu').classList.remove('active');
+            auth.signOut().then(() => {
+                window.location.reload();
+            });
+        }
+
+        function entrarComoInvitado() {
+            document.getElementById('login-overlay').classList.remove('active');
+            renderModoInvitado();
+        }
+
+        function renderModoInvitado() {
+            const htmlInvitado = `
+                <div style="text-align:center; padding: 40px 20px; background: #12181f; border: 1px solid var(--gold); border-radius: 8px; margin-top: 10px;">
+                    <i class="fas fa-lock fa-3x" style="color:var(--gold); margin-bottom:15px;"></i>
+                    <h3 style="color:var(--white); margin-bottom: 10px;">Modo Invitado</h3>
+                    <p style="color:var(--text-dim); font-size: 0.95rem; margin-bottom: 25px;">Si quieres registrar tus Láminas debes iniciar sesión con tu cuenta Google.</p>
+                    
+                    <button class="google-btn" onclick="iniciarSesionGoogle()" style="max-width: 300px; margin: 0 auto;">
+                        <div class="google-icon-wrapper">
+                            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                                <path fill="none" d="M0 0h48v48H0z"></path>
+                            </svg>
+                        </div>
+                        <p class="btn-text">Continuar con Google</p>
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('coleccion').innerHTML = htmlInvitado;
+            document.getElementById('repetidas').innerHTML = htmlInvitado;
+            
+            // Setear estadísticas a 0 para el invitado
+            document.getElementById('pegadas').innerText = "0";
+            document.getElementById('faltantes').innerText = TOTAL_ALBUM;
+            document.getElementById('porcentaje').innerText = "0.0%";
+            document.getElementById('total-repetidas').innerText = "0";
+        }
+
+        // === 4. LÓGICA DE MENÚ Y QR ===
         function toggleMenu() {
             document.getElementById('main-menu').classList.toggle('active');
         }
 
         function obtenerEnlaceCompartir() {
-            let urlBase = window.location.href.split('?')[0]; // Toma la URL actual sin parámetros
-            
-            // Si el archivo se está abriendo de forma local en la PC (file:///)
-            // Forzamos un enlace HTTPS para que la cámara del celular no arroje error.
+            let urlBase = window.location.href.split('?')[0]; 
             if (window.location.protocol === 'file:') {
                 urlBase = URL_PRODUCCION;
             }
-            
-            // Nos aseguramos que no quede una barra suelta al final antes de sumar el parámetro
             urlBase = urlBase.replace(/\/$/, "");
-            
             return `${urlBase}?missing=${usuarioId}`;
         }
 
@@ -676,7 +801,7 @@
             }
         }
 
-        // === 4. LÓGICA DEL POP-UP GENERAL ===
+        // === 5. LÓGICA DEL POP-UP GENERAL ===
         function showModal(type, title, message, confirmCallback = null) {
             const modal = document.getElementById('custom-modal');
             const icon = document.getElementById('modal-icon');
@@ -713,7 +838,7 @@
             document.getElementById('custom-modal').classList.remove('active');
         }
 
-        // === 5. FIREBASE Y UI BASE ===
+        // === 6. FIREBASE Y UI BASE ===
         function cargarDatosDesdeNube() {
             db.ref('trackers/' + usuarioId).once('value').then((snapshot) => {
                 const data = snapshot.val();
@@ -908,7 +1033,7 @@
             repContainer.innerHTML += `<div class="action-btns-container"><button class="btn-action btn-clear" onclick="confirmarLimpiar('repetidas')">🗑️ Resetear Repetidas</button><button class="btn-action btn-save" onclick="guardarCategoria('repetidas')">💾 Guardar Repetidas</button></div>`;
         }
 
-        // === 6. MODO VISTA DE FALTANTES (READ ONLY) ===
+        // === 7. MODO VISTA DE FALTANTES (READ ONLY) ===
         function activarModoLecturaFaltantes(targetId) {
             document.getElementById('sys-menu').style.display = 'none';
             document.getElementById('sys-stats').style.display = 'none';
@@ -917,7 +1042,9 @@
             document.getElementById('coleccion').style.display = 'none';
             document.getElementById('repetidas').style.display = 'none';
             
-            document.getElementById('top-title').innerHTML = 'Laminas <span class="gold-text">Faltantes</span>';
+            document.getElementById('login-overlay').classList.remove('active');
+            
+            document.getElementById('top-title').innerHTML = 'Faltantes <span class="gold-text">Colega</span>';
             
             const vistaContainer = document.getElementById('vista-faltantes');
             vistaContainer.classList.add('active');
@@ -972,16 +1099,28 @@
             document.getElementById('vista-faltantes').innerHTML = html;
         }
 
-        // === 7. ARRANQUE DEL SISTEMA ===
+        // === 8. ARRANQUE DEL SISTEMA Y GESTIÓN DE SESIÓN ===
         window.onload = function() {
             const params = new URLSearchParams(window.location.search);
+            
             if(params.has('missing')) {
                 const targetId = params.get('missing');
                 activarModoLecturaFaltantes(targetId);
             } else {
-                buildUI();
-                updateStats();
-                cargarDatosDesdeNube();
+                auth.onAuthStateChanged(function(user) {
+                    if (user) {
+                        usuarioId = user.uid; 
+                        document.getElementById('login-overlay').classList.remove('active');
+                        
+                        buildUI();
+                        updateStats();
+                        cargarDatosDesdeNube();
+                    } else {
+                        document.getElementById('login-overlay').classList.add('active');
+                        // Pre-renderizar en background para cuando el invitado cierre el modal
+                        renderModoInvitado();
+                    }
+                });
             }
         };
 
